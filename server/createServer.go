@@ -15,6 +15,7 @@ func CreateServer(serviceName string, jaegerAddress string, handler func(r *gin.
 
 	r := gin.Default()
 	r.Use(gintrace.Middleware(tracer))
+	r.Use(middleware.TraceIDMiddleware())
 	r.Use(middleware.TracingMiddleware())
 	handler(r)
 	r.Run()

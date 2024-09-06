@@ -8,6 +8,12 @@ import (
 	"github.com/opentracing/opentracing-go/log"
 )
 
+var span opentracing.Span
+
+func GetCurrentSpan() opentracing.Span {
+	return span
+}
+
 func TracingMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tracer := opentracing.GlobalTracer() // Получаем глобальный трейсер
@@ -19,7 +25,7 @@ func TracingMiddleware() gin.HandlerFunc {
 		}
 
 		// Создаем новый спан, продолжая цепочку если был передан контекст
-		span := tracer.StartSpan(c.Request.Method+" "+c.FullPath(), ext.RPCServerOption(wireContext))
+		span = tracer.StartSpan(c.Request.Method+" "+c.FullPath(), ext.RPCServerOption(wireContext))
 		defer span.Finish()
 
 		// Добавляем контекст со спаном в запрос для последующего использования
