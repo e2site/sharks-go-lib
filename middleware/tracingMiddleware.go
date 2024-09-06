@@ -28,6 +28,9 @@ func TracingMiddleware() gin.HandlerFunc {
 		span = tracer.StartSpan(c.Request.Method+" "+c.FullPath(), ext.RPCServerOption(wireContext))
 		defer span.Finish()
 
+		traceId := c.GetHeader(X_TRACE_ID)
+		span.SetTag(X_TRACE_ID, traceId)
+
 		// Добавляем контекст со спаном в запрос для последующего использования
 		ctx := opentracing.ContextWithSpan(c.Request.Context(), span)
 		c.Request = c.Request.WithContext(ctx)
