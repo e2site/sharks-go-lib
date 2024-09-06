@@ -1,7 +1,7 @@
 package db
 
 import (
-	"gitlab.com/shark-game/backend/shark-go-lib/log"
+	"github.com/e2site/sharks-go-lib/log"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )

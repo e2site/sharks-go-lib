@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"gitlab.com/shark-game/backend/shark-go-lib/config"
+	"github.com/e2site/sharks-go-lib/config"
 	"testing"
 )
 

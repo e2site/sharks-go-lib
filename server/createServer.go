@@ -1,9 +1,9 @@
 package server
 
 import (
+	"github.com/e2site/sharks-go-lib/middleware"
 	"github.com/gin-gonic/gin"
 	gintrace "github.com/opentracing-contrib/go-gin/ginhttp"
-	"gitlab.com/shark-game/backend/shark-go-lib/middleware"
 )
 
 func CreateServer(serviceName string, jaegerAddress string, handler func(r *gin.Engine)) {

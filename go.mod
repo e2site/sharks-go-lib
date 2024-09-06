@@ -1,4 +1,4 @@
-module gitlab.com/shark-game/backend/shark-go-lib
+module github.com/e2site/sharks-go-lib
 
 go 1.22.6
 

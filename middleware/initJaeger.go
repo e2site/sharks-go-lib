@@ -1,10 +1,10 @@
 package middleware
 
 import (
+	log2 "github.com/e2site/sharks-go-lib/log"
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/config"
-	log2 "gitlab.com/shark-game/backend/shark-go-lib/log"
 	"io"
 )
 
