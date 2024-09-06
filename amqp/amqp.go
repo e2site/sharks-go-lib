@@ -1,9 +1,8 @@
 package amqp
 
 import (
-	"fmt"
+	"github.com/e2site/sharks-go-lib/log"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"os"
 )
 
 var conAMQP *amqp.Connection
@@ -11,16 +10,10 @@ var chAMQP *amqp.Channel
 
 func InitAMQP(dsn string) {
 	conn, err := amqp.Dial(dsn)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	log.CheckEndLogFatal(err)
 	conAMQP = conn
 	ch, errCh := conAMQP.Channel()
-	if errCh != nil {
-		fmt.Println(errCh)
-		os.Exit(1)
-	}
+	log.CheckEndLogFatal(errCh)
 	chAMQP = ch
 }
 
