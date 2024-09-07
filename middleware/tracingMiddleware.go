@@ -24,8 +24,7 @@ func TracingMiddleware() gin.HandlerFunc {
 
 		telegrammId, existTelegrammId := c.Get(CONTEXT_TG_NAME)
 		if existTelegrammId {
-
-			span.SetAttributes(attribute.String("metadata.tguser", fmt.Sprintf("%s", telegrammId)))
+			span.SetAttributes(attribute.String("metadata.tguser", fmt.Sprintf("%v", telegrammId)))
 		}
 
 		// Логируем начало обработки запроса
