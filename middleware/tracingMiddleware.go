@@ -1,64 +1,58 @@
 package middleware
 
 import (
-	log2 "github.com/e2site/sharks-go-lib/log"
+	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/opentracing/opentracing-go"
-	"github.com/opentracing/opentracing-go/ext"
-	"github.com/opentracing/opentracing-go/log"
+	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
+
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
-
-var span opentracing.Span
-
-func GetCurrentSpan() opentracing.Span {
-	return span
-}
 
 func TracingMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		tracer := opentracing.GlobalTracer() // Получаем глобальный трейсер
+		// Создаем новый спан
+		ctx := c.Request.Context()
+		span := trace.SpanFromContext(ctx)
 
-		// Извлечение контекста из заголовков запроса
-		wireContext, err := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(c.Request.Header))
-		if err != nil && err != opentracing.ErrSpanContextNotFound {
-			log2.Log(err)
-		}
-
-		// Создаем новый спан, продолжая цепочку если был передан контекст
-		span = tracer.StartSpan(c.Request.Method+" "+c.FullPath(), ext.RPCServerOption(wireContext))
-		defer span.Finish()
-
+		// Добавляем заголовок с Trace ID в ответ
 		traceId, existTrace := c.Get(X_TRACE_ID)
 		if existTrace {
-			span.SetTag(X_TRACE_ID, traceId)
+			span.SetAttributes(attribute.String("sharks.id", fmt.Sprintf("%s", traceId)))
 		}
 
-		// Добавляем контекст со спаном в запрос для последующего использования
-		ctx := opentracing.ContextWithSpan(c.Request.Context(), span)
-		c.Request = c.Request.WithContext(ctx)
+		telegrammId, existTelegrammId := c.Get(CONTEXT_TG_NAME)
+		if existTelegrammId {
+			span.SetAttributes(attribute.String("sharks.user", fmt.Sprintf("%s", telegrammId)))
+		}
 
 		// Логируем начало обработки запроса
-		span.LogFields(
-			log.String("event", "request_started"),
-			log.String("url", c.Request.URL.String()),
-		)
+		span.AddEvent("request_started", trace.WithAttributes(
+			semconv.HTTPMethodKey.String(c.Request.Method),
+			semconv.HTTPURLKey.String(c.Request.URL.String()),
+		))
 
 		// Выполняем следующий обработчик
 		c.Next()
 
 		// Логируем конец обработки запроса
-		span.LogFields(
-			log.String("event", "request_finished"),
-			log.Int("status_code", c.Writer.Status()),
-		)
+		span.AddEvent("request_finished", trace.WithAttributes(
+			semconv.HTTPStatusCodeKey.Int(c.Writer.Status()),
+		))
 
 		// Добавляем теги для статуса ответа
-		ext.HTTPStatusCode.Set(span, uint16(c.Writer.Status()))
+		span.SetAttributes(
+			semconv.HTTPStatusCodeKey.Int(c.Writer.Status()),
+		)
 
 		if len(c.Errors) > 0 {
 			// Логируем ошибки, если они есть
-			span.LogFields(log.String("error", c.Errors.String()))
-			ext.Error.Set(span, true)
+			span.AddEvent("error", trace.WithAttributes(
+				semconv.HTTPStatusCodeKey.Int(c.Writer.Status()),
+			))
+			span.SetStatus(codes.Error, "Error")
 		}
+
 	}
 }
