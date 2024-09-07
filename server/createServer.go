@@ -11,7 +11,7 @@ import (
 	"os/signal"
 )
 
-func CreateServer(serviceName string, jaegerAddress string, handler func(r *gin.Engine)) {
+func CreateServer(serviceName string, handler func(r *gin.Engine)) {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()

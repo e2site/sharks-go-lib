@@ -19,12 +19,13 @@ func TracingMiddleware() gin.HandlerFunc {
 		// Добавляем заголовок с Trace ID в ответ
 		traceId, existTrace := c.Get(X_TRACE_ID)
 		if existTrace {
-			span.SetAttributes(attribute.String("sharks.id", fmt.Sprintf("%s", traceId)))
+			span.SetAttributes(attribute.String("metadata.tracer", fmt.Sprintf("%s", traceId)))
 		}
 
 		telegrammId, existTelegrammId := c.Get(CONTEXT_TG_NAME)
 		if existTelegrammId {
-			span.SetAttributes(attribute.String("sharks.user", fmt.Sprintf("%s", telegrammId)))
+
+			span.SetAttributes(attribute.String("metadata.tguser", fmt.Sprintf("%s", telegrammId)))
 		}
 
 		// Логируем начало обработки запроса
