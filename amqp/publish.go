@@ -1,15 +1,25 @@
 package amqp
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
+	"github.com/e2site/sharks-go-lib/otl"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"go.opentelemetry.io/otel"
 )
 
-func PublishMessage[Obj any](exchangeName string, object *Obj) error {
+func PublishMessage[Obj any](ctx context.Context, exchangeName string, object *Obj) error {
 	body, err := json.Marshal(object)
 	if err != nil {
 		return err
 	}
+
+	tr := otel.Tracer("amqp")
+	amqpContext, messageSpan := tr.Start(ctx, fmt.Sprintf("AMQP - publish - %s", exchangeName))
+	defer messageSpan.End()
+
+	headers := otl.InjectAMQPHeaders(amqpContext)
 
 	ch := GetChannel()
 	errPub := ch.Publish(
@@ -20,6 +30,7 @@ func PublishMessage[Obj any](exchangeName string, object *Obj) error {
 		amqp.Publishing{
 			ContentType: "application/json",
 			Body:        body,
+			Headers:     headers,
 		},
 	)
 

@@ -13,7 +13,16 @@ import (
 	"time"
 )
 
+var (
+	sdkInit = false
+)
+
+func GetOTelSDKStatus() bool {
+	return sdkInit
+}
+
 func SetupOTelSDK(ctx context.Context, serviceName string) (shutdown func(context.Context) error, err error) {
+	sdkInit = true
 	var shutdownFuncs []func(context.Context) error
 
 	// shutdown calls cleanup functions registered via shutdownFuncs.
