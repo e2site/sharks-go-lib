@@ -11,7 +11,7 @@ func CreateClient(ctx context.Context, tracerName string) *resty.Client {
 
 	opts := []otelresty.Option{otelresty.WithTracerName(tracerName), otelresty.WithSkipper(func(r *resty.Request) bool {
 		r.SetContext(ctx)
-		return true
+		return false
 	})}
 
 	otelresty.TraceClient(cli, opts...)
