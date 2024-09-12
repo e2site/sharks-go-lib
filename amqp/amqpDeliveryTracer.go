@@ -8,10 +8,10 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func AMQPDeliveryTracer(ctx context.Context, delivery *amqp091.Delivery, spanName string) trace.Span {
+func AMQPDeliveryTracer(ctx context.Context, delivery *amqp091.Delivery, spanName string) (context.Context, trace.Span) {
 	ct := otl.ExtractAMQPHeaders(ctx, delivery.Headers)
 	// Create a new span
 	tr := otel.Tracer("amqp")
 	_, messageSpan := tr.Start(ct, spanName)
-	return messageSpan
+	return ct, messageSpan
 }
