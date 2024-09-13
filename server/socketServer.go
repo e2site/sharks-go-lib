@@ -6,7 +6,10 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 )
+
+const pingPeriod = 54 * time.Second
 
 var upgrader = websocket.Upgrader{}
 
@@ -22,6 +25,22 @@ func SendWsMessage(telegramId int64, message string) {
 		if err != nil {
 			delete(clients, keyTg)
 			ws.Close()
+		}
+	}
+}
+
+func ping(ws *websocket.Conn, telegramId string, done chan struct{}) {
+	ticker := time.NewTicker(pingPeriod)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			if err := ws.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(pingPeriod)); err != nil {
+				delete(clients, telegramId)
+				ws.Close()
+			}
+		case <-done:
+			return
 		}
 	}
 }
@@ -52,6 +71,13 @@ func CreateSocketServer(handlerReader func(message string), httpHeaderName strin
 		clients[telegramId] = ws
 		mu.Unlock()
 
+		stdoutDone := make(chan struct{})
+		defer func() {
+			close(stdoutDone)
+		}()
+
+		go ping(ws, telegramId, stdoutDone)
+
 		for {
 			_, msg, err := ws.ReadMessage()
 			if err != nil {
@@ -59,6 +85,7 @@ func CreateSocketServer(handlerReader func(message string), httpHeaderName strin
 			}
 			handlerReader(string(msg))
 		}
+
 		mu.Lock()
 		delete(clients, telegramId)
 		mu.Unlock()
