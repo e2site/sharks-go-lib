@@ -8,13 +8,21 @@ import (
 	"time"
 )
 
+var cntRnd int64 = 1
+
 func PublishScheduler[Obj any](exchanger string, object *Obj, scTime time.Time) error {
 	body, err := json.Marshal(object)
 	if err != nil {
 		return err
 	}
 
-	ttl := scTime.Sub(time.Now()).Milliseconds()
+	if cntRnd > 999 {
+		cntRnd = 1
+	}
+
+	ttl := scTime.Sub(time.Now()).Milliseconds() + cntRnd
+
+	cntRnd++
 
 	if ttl < 0 {
 		ttl = 1
