@@ -5,6 +5,7 @@ go 1.22.6
 toolchain go1.22.7
 
 require (
+	github.com/btcsuite/btcutil v1.0.2
 	github.com/dubonzi/otelresty v1.3.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-resty/resty/v2 v2.14.0

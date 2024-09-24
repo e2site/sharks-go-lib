@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/btcsuite/btcutil/base58"
 	"github.com/e2site/sharks-go-lib/log"
 	"github.com/e2site/sharks-go-lib/telegram"
 	"github.com/gorilla/websocket"
@@ -55,7 +56,9 @@ func CreateSocketServer(handlerReader func(message string), httpHeaderName strin
 			http.Error(writer, "Bad token", 400)
 			return
 		}
-		tgAuth := telegram.NewTelegramAuth(authStr, tokenTg)
+		decode := base58.Decode(authStr)
+
+		tgAuth := telegram.NewTelegramAuth(authStr, string(decode))
 		if !tgAuth.CheckAuth() {
 			http.Error(writer, "Bad token", 400)
 			return
