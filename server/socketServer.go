@@ -58,7 +58,7 @@ func CreateSocketServer(handlerReader func(message string), httpHeaderName strin
 		}
 		decode := base58.Decode(authStr)
 
-		tgAuth := telegram.NewTelegramAuth(authStr, string(decode))
+		tgAuth := telegram.NewTelegramAuth(string(decode), tokenTg)
 		if !tgAuth.CheckAuth() {
 			http.Error(writer, "Bad token", 400)
 			return
