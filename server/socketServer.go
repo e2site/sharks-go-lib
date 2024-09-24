@@ -13,7 +13,11 @@ import (
 
 const pingPeriod = 54 * time.Second
 
-var upgrader = websocket.Upgrader{}
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
 
 var clients = make(map[string]*websocket.Conn)
 var mu sync.Mutex
