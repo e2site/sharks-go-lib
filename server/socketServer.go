@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/e2site/sharks-go-lib/log"
+	"github.com/e2site/sharks-go-lib/telegram"
 	"github.com/gorilla/websocket"
 	"net/http"
 	"strconv"
@@ -45,13 +46,22 @@ func ping(ws *websocket.Conn, telegramId string, done chan struct{}) {
 	}
 }
 
-func CreateSocketServer(handlerReader func(message string), httpHeaderName string) {
+func CreateSocketServer(handlerReader func(message string), httpHeaderName string, tokenTg string) {
 	http.HandleFunc("/ws", func(writer http.ResponseWriter, request *http.Request) {
-		telegramId := request.Header.Get(httpHeaderName)
-		if telegramId == "" {
+		queryParam := request.URL.Query()
+		authStr := queryParam.Get("auth")
+
+		if authStr == "" {
 			http.Error(writer, "Bad token", 400)
 			return
 		}
+		tgAuth := telegram.NewTelegramAuth(authStr, tokenTg)
+		if !tgAuth.CheckAuth() {
+			http.Error(writer, "Bad token", 400)
+			return
+		}
+
+		telegramId := strconv.Itoa(tgAuth.ID)
 
 		ws, err := upgrader.Upgrade(writer, request, nil)
 		defer ws.Close()
