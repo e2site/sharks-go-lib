@@ -8,6 +8,6 @@ import (
 func TestWS(t *testing.T) {
 	server.CreateSocketServer(func(message string) {
 		return
-	}, "Test")
+	}, "Test", "123")
 
 }

@@ -19,30 +19,71 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-var clients = make(map[string]*websocket.Conn)
+type StatusConnection struct {
+	Connection map[string]*websocket.Conn
+}
+
+func (s *StatusConnection) NewClient(ws *websocket.Conn) (string, bool) {
+	if s.Connection == nil {
+		s.Connection = make(map[string]*websocket.Conn)
+	}
+	if len(s.Connection) > 9 {
+		return "", false
+	}
+
+	index := time.Now().String()
+	s.Connection[index] = ws
+	return index, true
+}
+func (s *StatusConnection) CountClient() int {
+	return len(s.Connection)
+}
+
+func (s *StatusConnection) DelClient(ind string) {
+	_, exist := s.Connection[ind]
+	if exist {
+		delete(s.Connection, ind)
+	}
+}
+func (s *StatusConnection) SendMessage(message string) {
+	for ind, ws := range s.Connection {
+		err := ws.WriteMessage(websocket.TextMessage, []byte(message))
+		if err != nil {
+			ws.Close()
+			s.DelClient(ind)
+		}
+	}
+}
+
+var clients = make(map[string]*StatusConnection)
 var mu sync.Mutex
 
 func SendWsMessage(telegramId int64, message string) {
 	mu.Lock()
 	defer mu.Unlock()
 	keyTg := strconv.FormatInt(telegramId, 10)
-	if ws, ok := clients[keyTg]; ok {
-		err := ws.WriteMessage(websocket.TextMessage, []byte(message))
-		if err != nil {
+	if sc, ok := clients[keyTg]; ok {
+		sc.SendMessage(message)
+		if sc.CountClient() == 0 {
 			delete(clients, keyTg)
-			ws.Close()
 		}
 	}
 }
 
-func ping(ws *websocket.Conn, telegramId string, done chan struct{}) {
+func ping(ws *websocket.Conn, telegramId string, idx string, done chan struct{}) {
 	ticker := time.NewTicker(pingPeriod)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
 			if err := ws.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(pingPeriod)); err != nil {
-				delete(clients, telegramId)
+				_, exist := clients[telegramId]
+				if exist {
+					clients[telegramId].DelClient(idx)
+				}
+				if clients[telegramId].CountClient() == 0 {
+					delete(clients, telegramId)
+				}
 				ws.Close()
 			}
 		case <-done:
@@ -79,21 +120,24 @@ func CreateSocketServer(handlerReader func(message string), httpHeaderName strin
 
 		_, exist := clients[telegramId]
 
-		if exist {
-			http.Error(writer, "Connection exist", 421)
+		mu.Lock()
+		if !exist {
+			clients[telegramId] = &StatusConnection{}
+		}
+		idx, status := clients[telegramId].NewClient(ws)
+		mu.Unlock()
+
+		if !status {
+			http.Error(writer, "Max limit connection", 402)
 			return
 		}
-
-		mu.Lock()
-		clients[telegramId] = ws
-		mu.Unlock()
 
 		stdoutDone := make(chan struct{})
 		defer func() {
 			close(stdoutDone)
 		}()
 
-		go ping(ws, telegramId, stdoutDone)
+		go ping(ws, telegramId, idx, stdoutDone)
 
 		for {
 			_, msg, err := ws.ReadMessage()
@@ -104,7 +148,10 @@ func CreateSocketServer(handlerReader func(message string), httpHeaderName strin
 		}
 
 		mu.Lock()
-		delete(clients, telegramId)
+		clients[telegramId].DelClient(idx)
+		if clients[telegramId].CountClient() == 0 {
+			delete(clients, telegramId)
+		}
 		mu.Unlock()
 	})
 	err := http.ListenAndServe(":8080", nil)
