@@ -9,11 +9,6 @@ const EventBusExchanger = "event-bus-exchanger"
 
 var statusInit = false
 
-type EventMessage struct {
-	EventType string
-	Data      any
-}
-
 func DeclareEventBus() {
 	if !statusInit {
 		amqp.DeclareFanout(EventBusExchanger)
@@ -24,11 +19,7 @@ func DeclareEventBus() {
 func CreateEvent[Obj any](event string, data *Obj) {
 	DeclareEventBus()
 
-	var newEvent EventMessage
-	newEvent.EventType = event
-	newEvent.Data = data
-
-	err := amqp.PublishMessageWithoutTracer(EventBusExchanger, &newEvent)
+	err := amqp.PublishEventWithoutTracer(EventBusExchanger, event, data)
 	if err != nil {
 		log.Log(err)
 	}
