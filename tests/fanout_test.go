@@ -9,7 +9,9 @@ import (
 )
 
 func TestFanout(t *testing.T) {
-	amqp.InitAMQP("amqp://guest:guest@host.docker.internal:5672/")
+	amqp.InitAMQP("amqp://guest:guest@host.docker.internal:5672/", func() {
+
+	})
 	defer amqp.CloseAMQP()
 
 	status.ReadStatus(func(message *status.StatusMessage) {
@@ -17,6 +19,7 @@ func TestFanout(t *testing.T) {
 	})
 
 	status.PublishStatus(45676, "test")
+	time.Sleep(90 * time.Second)
 	status.PublishStatus(45676, "test 2")
 
 	time.Sleep(10 * time.Second)

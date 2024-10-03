@@ -8,15 +8,28 @@ import (
 const EventBusExchanger = "event-bus-exchanger"
 
 var statusInit = false
+var reconnectHandlerInit = false
 
 func DeclareEventBus() {
 	if !statusInit {
 		amqp.DeclareFanout(EventBusExchanger)
 		statusInit = true
 	}
+	if !reconnectHandlerInit {
+		reconnectHandlerInit = true
+		amqp.SubscribeConnection(func(status bool) {
+			if !status {
+				statusInit = false
+			}
+		})
+	}
 }
 
 func CreateEvent[Obj any](event string, data *Obj) {
+	if !amqp.GetStatusConnected() {
+		return
+	}
+
 	DeclareEventBus()
 
 	err := amqp.PublishEventWithoutTracer(EventBusExchanger, event, data)
