@@ -8,7 +8,9 @@ import (
 )
 
 func TestScheduler(t *testing.T) {
-	amqp.InitAMQP("amqp://guest:guest@host.docker.internal:5672/")
+	amqp.InitAMQP("amqp://guest:guest@host.docker.internal:5672/", func() {
+
+	})
 	defer amqp.CloseAMQP()
 	shedouler.CreateScheduler("test_scheduler", "test_sc_queue")
 	shedouler.PublishScheduler("test_scheduler", &map[string]string{
